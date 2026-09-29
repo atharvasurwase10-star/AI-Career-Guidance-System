@@ -36,6 +36,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     system: 'CareerAI API Service',
+    environment: process.env.NODE_ENV || 'production',
     timestamp: new Date().toISOString()
   });
 });
@@ -44,8 +45,8 @@ app.get('/api/health', (req, res) => {
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
-app.get('*', (req, res) => {
-  // If request is not an API route, serve React index.html
+// For SPA routing, send index.html for non-API routes
+app.get('/{splat}', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(distPath, 'index.html'));
   } else {
@@ -53,11 +54,16 @@ app.get('*', (req, res) => {
   }
 });
 
-// Start Server
+// Start Server on 0.0.0.0 for Cloud Deployment (Render/Railway/Heroku)
 async function startServer() {
-  await connectDB();
-  app.listen(PORT, () => {
-    console.log(`🚀 CareerAI Server running on port ${PORT}`);
+  try {
+    await connectDB();
+  } catch (err) {
+    console.warn('Database initialization warning:', err.message);
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 CareerAI Server listening on 0.0.0.0:${PORT}`);
   });
 }
 
